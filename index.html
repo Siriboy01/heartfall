@@ -2,95 +2,228 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Heartfall</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Heartfall · Anniversary Rain</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      background: #000; 
-      overflow: hidden; 
-      /* Prevents blurry rendering on some devices */
-      image-rendering: pixelated;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* prevents accidental selection on mobile */
+    }
+
+    body {
+      background: #000000;
+      overflow: hidden;
+      /* crisp rendering */
+      image-rendering: crisp-edges;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    canvas { display: block; }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
-  <canvas id="rain"></canvas>
-  <script>
-    const canvas = document.getElementById('rain');
+<canvas id="loveRain"></canvas>
+
+<script>
+  (function() {
+    // ------------------------------
+    // 🎨 BETTER SPACING & NO OVERLAP
+    // ------------------------------
+    const canvas = document.getElementById('loveRain');
     const ctx = canvas.getContext('2d');
 
-    // 🎨 COLORS - Bright, high-contrast for clarity
-    const COLORS = ['#ff6b8a', '#ff9eb5', '#e66bff', '#a66bff', '#ffb6c1', '#ffd1dc', '#00ffcc'];
-    
-    // 💬 YOUR PHRASES
-    const PHRASES = [
-      "I love youuuu", 
-      "I miss you", 
-      "3 years 1 month 🔥😭",
-      "Happy Anniversary Babe ❤️",
-      "My heart is where you belong"
+    // 💖 Vivid, romantic palette (bright, high contrast)
+    const COLORS = [
+      '#ff4d6d', '#ff8c9e', '#ffb3c6', '#e56bff', '#b76eff', 
+      '#ff6ec7', '#3affd6', '#ffbc6e', '#ff9f4a'
     ];
 
+    // 💬 MESSAGES — short & sweet, fits perfectly on mobile
+    const PHRASES = [
+      "I love youuuu ❤️",
+      "I miss you 🌙",
+      "3 years 1 month 🔥😭",
+      "Happy Anniversary Babe ✨",
+      "My heart is where you belong",
+      "Always yours 💘",
+      "Forever & ever",
+      "You + me = ∞",
+      "Best decision ever",
+      "My everything 💫"
+    ];
+
+    // ---- ADAPTIVE SETTINGS (perfect spacing on any screen) ----
     let columns = [];
-    const FONT_SIZE = 19;        // Slightly larger for readability
-    const FALL_SPEED = 2.3;
-    const SPACING = 32;          // More spacing = less visual clutter
-    const TRAIL_OPACITY = 0.37;  // Lower = shorter, cleaner trail
+    let BASE_SPACING = 58;        // horizontal gap (wide enough to avoid overlap)
+    let FONT_SIZE = 19;           // will adjust on small devices
+    let FALL_SPEED_BASE = 2.2;
+    const TRAIL_OPACITY = 0.28;    // cleaner fade → shorter trail = less ghosting
 
-    function init() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      columns = [];
+    // each column gets individual speed + slight horizontal wiggle
+    // to break rigid vertical lines and prevent visual clashing
 
-      const colCount = Math.floor(canvas.width / SPACING);
-
-      for (let i = 0; i < colCount; i++) {
-        columns.push({
-          x: i * SPACING + Math.random() * SPACING,
-          y: Math.random() * canvas.height,
-          text: PHRASES[Math.floor(Math.random() * PHRASES.length)],
-          color: COLORS[Math.floor(Math.random() * COLORS.length)]
-        });
+    function getDynamicSpacing() {
+      // wider spacing on narrow screens? actually use same logic, but ensure min 52px
+      let spacing = BASE_SPACING;
+      if (window.innerWidth < 480) {
+        spacing = Math.max(48, BASE_SPACING - 4); // still comfortable
+      } else if (window.innerWidth > 1200) {
+        spacing = 68;  // more breathing room on large screens
       }
+      return spacing;
     }
 
-    function animate() {
-      // Gentle trail - lowered opacity for cleaner look
+    function getOptimalFontSize() {
+      let base = 18;
+      if (window.innerWidth < 450) {
+        base = 16;   // tidy but readable
+      } else if (window.innerWidth > 800) {
+        base = 20;
+      } else {
+        base = 18;
+      }
+      return base;
+    }
+
+    // ✨ spread columns evenly across height → no vertical clump at start
+    // each column gets random speed offset + tiny X shift to avoid overlapping visually
+    function initColumns() {
+      const spacing = getDynamicSpacing();
+      const colCount = Math.max(8, Math.floor(canvas.width / spacing));
+      const newCols = [];
+
+      // evenly distribute initial Y across the full canvas height (no mass overlap)
+      for (let i = 0; i < colCount; i++) {
+        // linear distribution + slight randomness (but not too chaotic)
+        const t = i / colCount;  // 0..1
+        let yPos = t * canvas.height;
+        // add organic offset (±20px) to break perfect alignment, but still non-overlapping
+        yPos += (Math.random() - 0.5) * 26;
+        // clamp boundaries
+        yPos = Math.min(canvas.height + 30, Math.max(-40, yPos));
+
+        // random speed variation (±0.8) → columns drift apart vertically over time
+        const speedVariation = (Math.random() - 0.5) * 1.1;
+        const columnSpeed = Math.max(1.2, FALL_SPEED_BASE + speedVariation);
+
+        // slight X offset (±6px) makes text feel more organic, but never overlaps neighbour
+        const xOffset = (Math.random() - 0.5) * 10;
+
+        newCols.push({
+          x: i * spacing + xOffset,
+          y: yPos,
+          text: PHRASES[Math.floor(Math.random() * PHRASES.length)],
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          speed: columnSpeed,
+          // store original baseX for resize recalculation, but dynamic resize will rebuild anyway
+        });
+      }
+      return newCols;
+    }
+
+    // ensure no two columns are extremely close in Y when they reset? 
+    // natural speed variance already solves most issues, but we add a soft Y jitter on reset
+    function updateColumnOnReset(col, canvasHeight) {
+      col.y = -FONT_SIZE - Math.random() * 30;  // start above canvas with variation
+      col.text = PHRASES[Math.floor(Math.random() * PHRASES.length)];
+      col.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      // also slightly tweak speed for long-term variability
+      const newSpeedVar = (Math.random() - 0.5) * 1.1;
+      col.speed = Math.max(1.2, FALL_SPEED_BASE + newSpeedVar);
+      // tiny X drift on reset for even more organic movement (prevents fixed vertical stripes)
+      const maxDrift = 9;
+      const currentSpacing = getDynamicSpacing();
+      const colIndex = Math.floor(col.x / currentSpacing);
+      const idealX = colIndex * currentSpacing;
+      col.x = idealX + (Math.random() - 0.5) * maxDrift;
+    }
+
+    // resize handler: full rebuild with fresh layout
+    function resizeAndRebuild() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      FONT_SIZE = getOptimalFontSize();
+      BASE_SPACING = getDynamicSpacing();
+      
+      columns = initColumns();
+    }
+
+    // animation loop with silky trailing effect (crisp, modern)
+    let animationFrameId = null;
+    
+    function draw() {
+      if (!ctx) return;
+      
+      // create fading trail (lower opacity = shorter tails, cleaner look)
       ctx.fillStyle = `rgba(0, 0, 0, ${TRAIL_OPACITY})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+      
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      // Crisp font stack with emoji support
-      ctx.font = `600 ${FONT_SIZE}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Courier New', monospace, 'Apple Color Emoji', 'Segoe UI Emoji'`;
+      // super sharp font stack with full emoji support
+      ctx.font = `600 ${FONT_SIZE}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Courier New', 'Helvetica Neue', monospace, 'Apple Color Emoji', 'Segoe UI Emoji'`;
+      ctx.shadowBlur = 0;        // no blur — crystal clear
       
-      // ✨ NO BLUR - sharp text only
-      ctx.shadowBlur = 0;
-
+      // render every column
       for (let col of columns) {
         ctx.fillStyle = col.color;
         ctx.fillText(col.text, col.x, col.y);
-
-        col.y += FALL_SPEED;
-
-        // Reset when off-screen
-        if (col.y > canvas.height + 40) {
-          col.y = -40;
-          col.text = PHRASES[Math.floor(Math.random() * PHRASES.length)];
-          col.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        
+        // move downwards with unique speed
+        col.y += col.speed;
+        
+        // reset when out of visible area (with extra margin)
+        if (col.y > canvas.height + 55) {
+          updateColumnOnReset(col, canvas.height);
         }
       }
-
-      requestAnimationFrame(animate);
+      
+      animationFrameId = requestAnimationFrame(draw);
     }
-
-    window.addEventListener('resize', init);
-    init();
-    animate();
-  </script>
+    
+    // ------------------------------
+    // 🧠 PREVENT OVERLAP: extra safety check on window resize + orientation
+    // ------------------------------
+    let resizeTimeout;
+    function handleResize() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        resizeAndRebuild();
+      }, 80);
+    }
+    
+    // initial setup
+    function startRain() {
+      resizeAndRebuild();
+      draw();
+    }
+    
+    window.addEventListener('resize', handleResize);
+    // also handle orientation change (mobile)
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        resizeAndRebuild();
+      }, 30);
+    });
+    
+    startRain();
+    
+    // (optional) small cleanup for page unload – not mandatory, but good practice
+    window.addEventListener('beforeunload', () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      window.removeEventListener('resize', handleResize);
+    });
+  })();
+</script>
 </body>
 </html>
