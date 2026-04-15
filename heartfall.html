@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heartfall</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: #000; 
+      overflow: hidden; 
+      /* Prevents blurry rendering on some devices */
+      image-rendering: pixelated;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="rain"></canvas>
+  <script>
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+
+    // 🎨 COLORS - Bright, high-contrast for clarity
+    const COLORS = ['#ff6b8a', '#ff9eb5', '#e66bff', '#a66bff', '#ffb6c1', '#ffd1dc', '#00ffcc'];
+    
+    // 💬 YOUR PHRASES
+    const PHRASES = [
+      "I love youuuu", 
+      "I miss you", 
+      "3 years 1 month 🔥😭",
+      "Happy Anniversary Babe ❤️",
+      "My heart is where you belong"
+    ];
+
+    let columns = [];
+    const FONT_SIZE = 19;        // Slightly larger for readability
+    const FALL_SPEED = 2.3;
+    const SPACING = 32;          // More spacing = less visual clutter
+    const TRAIL_OPACITY = 0.37;  // Lower = shorter, cleaner trail
+
+    function init() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = [];
+
+      const colCount = Math.floor(canvas.width / SPACING);
+
+      for (let i = 0; i < colCount; i++) {
+        columns.push({
+          x: i * SPACING + Math.random() * SPACING,
+          y: Math.random() * canvas.height,
+          text: PHRASES[Math.floor(Math.random() * PHRASES.length)],
+          color: COLORS[Math.floor(Math.random() * COLORS.length)]
+        });
+      }
+    }
+
+    function animate() {
+      // Gentle trail - lowered opacity for cleaner look
+      ctx.fillStyle = `rgba(0, 0, 0, ${TRAIL_OPACITY})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // Crisp font stack with emoji support
+      ctx.font = `600 ${FONT_SIZE}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Courier New', monospace, 'Apple Color Emoji', 'Segoe UI Emoji'`;
+      
+      // ✨ NO BLUR - sharp text only
+      ctx.shadowBlur = 0;
+
+      for (let col of columns) {
+        ctx.fillStyle = col.color;
+        ctx.fillText(col.text, col.x, col.y);
+
+        col.y += FALL_SPEED;
+
+        // Reset when off-screen
+        if (col.y > canvas.height + 40) {
+          col.y = -40;
+          col.text = PHRASES[Math.floor(Math.random() * PHRASES.length)];
+          col.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', init);
+    init();
+    animate();
+  </script>
+</body>
+</html>
